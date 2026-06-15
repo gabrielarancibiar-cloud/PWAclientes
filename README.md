@@ -1,62 +1,65 @@
 # VALEPAC - PWA Creación de Clientes
 
-PWA pública para que un cliente escanee un QR y complete los datos necesarios para iniciar la creación de cliente.
+Repositorio limpio para subir a GitHub y desplegar en Vercel.
 
-## Datos que recoge
+## Qué hace
 
-- RUT empresa
-- Razón social
-- Giro
-- Teléfono
-- Dirección
-- Comuna
-- Mail
-- Nombre contacto
+- Publica una PWA en `/clientes/`.
+- Recoge estos datos:
+  - RUT empresa
+  - Razón social
+  - Giro
+  - Teléfono
+  - Dirección
+  - Comuna
+  - Mail
+  - Nombre contacto
+- Guarda la solicitud en Supabase.
+- Envía correo al destinatario definido en Vercel.
 
-## Ruta pública
+## Estructura correcta en GitHub
 
-Cuando esté desplegado en Vercel, el formulario quedará en:
-
-```txt
-https://TU-DOMINIO.vercel.app/clientes/
-```
-
-Ese enlace es el que debe ir dentro del QR.
-
-## Estructura
+Al abrir el repositorio, debe verse así, directamente en la raíz:
 
 ```txt
-public/clientes/index.html
-public/clientes/styles.css
-public/clientes/app.js
-public/clientes/manifest.webmanifest
-public/clientes/sw.js
-api/crear-cliente.js
-supabase/001_clientes_solicitudes.sql
+api/
+public/
+supabase/
 .env.example
+.gitignore
+package.json
+README.md
+vercel.json
 ```
 
-## Paso 1: Crear tabla en Supabase
+No debe quedar dentro de una carpeta madre tipo `valepac-clientes-repo-clean/`.
 
-1. Entrar a Supabase.
-2. Ir a SQL Editor.
-3. Abrir el archivo:
+## Paso 1: Supabase
+
+Ir a Supabase > SQL Editor y ejecutar:
 
 ```txt
 supabase/001_clientes_solicitudes.sql
 ```
 
-4. Ejecutarlo completo.
+## Paso 2: GitHub
 
-## Paso 2: Subir a GitHub
+Subir todo el contenido de este repositorio.
 
-1. Crear repositorio nuevo en GitHub.
-2. Subir todos los archivos de este paquete.
-3. Conectar ese repositorio a Vercel.
+## Paso 3: Vercel
 
-## Paso 3: Variables en Vercel
+Crear proyecto desde GitHub.
 
-En Vercel > Project > Settings > Environment Variables, agregar:
+Configuración recomendada:
+
+- Framework Preset: Other
+- Root Directory: `./` o vacío
+- Build Command: vacío o `npm run build`
+- Output Directory: vacío
+
+## Paso 4: Variables de entorno en Vercel
+
+En Vercel > Project > Settings > Environment Variables agregar:
 
 ```txt
 SUPABASE_URL
@@ -69,54 +72,40 @@ CLIENTES_REMITENTE_EMAIL
 Ejemplo:
 
 ```txt
-SUPABASE_URL=https://xxxxx.supabase.co
-SUPABASE_SERVICE_ROLE_KEY=xxxxx
-RESEND_API_KEY=re_xxxxx
 CLIENTES_DESTINO_EMAIL=clientes@tudominio.cl
 CLIENTES_REMITENTE_EMAIL=notificaciones@tudominio.cl
 ```
 
-## Paso 4: Deploy
+Importante: `CLIENTES_REMITENTE_EMAIL` debe estar autorizado/verificado en Resend.
 
-Después de cargar las variables, hacer redeploy en Vercel.
+## URL final
 
-## Resultado esperado
-
-El cliente abre `/clientes/`, completa el formulario y presiona **Enviar solicitud**.
-
-El sistema hace dos cosas:
-
-1. Guarda el registro en Supabase en la tabla `clientes_solicitudes`.
-2. Envía un correo al mail configurado en `CLIENTES_DESTINO_EMAIL`.
-
-## Nota importante sobre correo
-
-Este proyecto usa Resend para enviar correos.
-
-Para producción, conviene verificar un dominio propio en Resend y usar un remitente como:
+La PWA queda en:
 
 ```txt
-notificaciones@tudominio.cl
+https://tu-proyecto.vercel.app/clientes/
 ```
 
-Para pruebas, Resend permite usar:
+La raíz también redirige al formulario:
 
 ```txt
-onboarding@resend.dev
+https://tu-proyecto.vercel.app/
 ```
 
-pero puede tener restricciones de destinatario.
+## QR
 
-## Seguridad
-
-La PWA no usa claves de Supabase en el navegador.
-
-El guardado se hace mediante:
+El QR debe apuntar a:
 
 ```txt
-/api/crear-cliente
+https://tu-proyecto.vercel.app/clientes/
 ```
 
-Esa API corre en Vercel y usa `SUPABASE_SERVICE_ROLE_KEY` solo del lado servidor.
+## Prueba rápida
 
-No publiques la `SUPABASE_SERVICE_ROLE_KEY` en GitHub.
+1. Entrar a `/clientes/`.
+2. Completar datos válidos.
+3. Enviar.
+4. Revisar tabla `clientes_solicitudes` en Supabase.
+5. Revisar correo destino.
+
+Si el formulario abre pero no envía, el problema casi seguro son variables de entorno o dominio no verificado en Resend.

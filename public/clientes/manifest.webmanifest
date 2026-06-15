@@ -1,11 +1,11 @@
 {
   "name": "Creación de Clientes VALEPAC",
-  "short_name": "Clientes",
-  "description": "Formulario de creación de clientes VALEPAC",
+  "short_name": "Clientes VALEPAC",
+  "description": "Formulario público de solicitud de creación de clientes VALEPAC.",
   "start_url": "/clientes/",
   "scope": "/clientes/",
   "display": "standalone",
-  "background_color": "#F3F6FA",
+  "background_color": "#f4f7fb",
   "theme_color": "#0057B8",
   "icons": [
     {
@@ -16,7 +16,8 @@
     {
       "src": "/clientes/icon-512.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     }
   ]
 }

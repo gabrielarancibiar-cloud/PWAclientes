@@ -2,13 +2,12 @@
   "name": "valepac-clientes-pwa",
   "version": "1.0.0",
   "private": true,
-  "type": "module",
-  "description": "PWA pública para formulario QR de creación de clientes VALEPAC.",
+  "description": "PWA pública VALEPAC para solicitud de creación de clientes.",
   "scripts": {
     "build": "echo \"No build required\"",
-    "start": "node -e \"console.log('Proyecto para Vercel')\""
+    "start": "vercel dev"
   },
   "engines": {
-    "node": ">=20"
+    "node": ">=18"
   }
 }

@@ -1,43 +1,50 @@
+function json(res, statusCode, body) {
+  res.statusCode = statusCode;
+  res.setHeader("Content-Type", "application/json; charset=utf-8");
+  res.end(JSON.stringify(body));
+}
+
 function cleanText(value) {
   return String(value || "").trim();
 }
 
 function cleanRut(rut) {
-  return String(rut || "")
-    .replace(/\./g, "")
-    .replace(/-/g, "")
-    .trim()
-    .toUpperCase();
+  return String(rut || "").replace(/\./g, "").replace(/-/g, "").trim().toUpperCase();
+}
+
+function formatRut(rut) {
+  const cleaned = cleanRut(rut);
+  if (cleaned.length < 2) return cleaned;
+  const body = cleaned.slice(0, -1);
+  const dv = cleaned.slice(-1);
+  return `${body.replace(/\B(?=(\d{3})+(?!\d))/g, ".")}-${dv}`;
 }
 
 function isValidRut(rut) {
   const cleaned = cleanRut(rut);
-
   if (!/^\d{7,8}[0-9K]$/.test(cleaned)) return false;
 
   const body = cleaned.slice(0, -1);
   const dv = cleaned.slice(-1);
-
   let sum = 0;
-  let multiplier = 2;
+  let factor = 2;
 
   for (let i = body.length - 1; i >= 0; i--) {
-    sum += Number(body[i]) * multiplier;
-    multiplier = multiplier === 7 ? 2 : multiplier + 1;
+    sum += Number(body[i]) * factor;
+    factor = factor === 7 ? 2 : factor + 1;
   }
 
-  const expected = 11 - (sum % 11);
-  const expectedDv = expected === 11 ? "0" : expected === 10 ? "K" : String(expected);
-
-  return dv === expectedDv;
+  const result = 11 - (sum % 11);
+  const expected = result === 11 ? "0" : result === 10 ? "K" : String(result);
+  return dv === expected;
 }
 
 function isValidEmail(email) {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email || "").trim());
 }
 
 function isValidPhone(phone) {
-  return /^[+0-9\s-]{8,18}$/.test(phone);
+  return /^[+0-9\s-]{8,18}$/.test(String(phone || "").trim());
 }
 
 function escapeHtml(value) {
@@ -49,37 +56,37 @@ function escapeHtml(value) {
     .replace(/'/g, "&#039;");
 }
 
-function validatePayload(data) {
-  const requiredFields = [
-    "rut_empresa",
-    "razon_social",
-    "giro",
-    "telefono",
-    "direccion",
-    "comuna",
-    "mail",
-    "nombre_contacto"
+function validatePayload(payload) {
+  const required = [
+    ["rut_empresa", "RUT empresa"],
+    ["razon_social", "Razón social"],
+    ["giro", "Giro"],
+    ["telefono", "Teléfono"],
+    ["direccion", "Dirección"],
+    ["comuna", "Comuna"],
+    ["mail", "Mail"],
+    ["nombre_contacto", "Nombre contacto"]
   ];
 
-  for (const field of requiredFields) {
-    if (!cleanText(data[field])) {
-      return `Falta el campo: ${field}`;
-    }
+  for (const [key, label] of required) {
+    if (!cleanText(payload[key])) return `Falta completar: ${label}.`;
   }
 
-  if (!isValidRut(data.rut_empresa)) {
-    return "RUT inválido.";
-  }
-
-  if (!isValidEmail(data.mail)) {
-    return "Correo inválido.";
-  }
-
-  if (!isValidPhone(data.telefono)) {
-    return "Teléfono inválido.";
-  }
+  if (!isValidRut(payload.rut_empresa)) return "RUT empresa inválido.";
+  if (!isValidEmail(payload.mail)) return "Mail inválido.";
+  if (!isValidPhone(payload.telefono)) return "Teléfono inválido.";
 
   return null;
+}
+
+async function readBody(req) {
+  if (req.body && typeof req.body === "object") return req.body;
+  if (typeof req.body === "string") return JSON.parse(req.body || "{}");
+
+  const chunks = [];
+  for await (const chunk of req) chunks.push(chunk);
+  const raw = Buffer.concat(chunks).toString("utf8");
+  return raw ? JSON.parse(raw) : {};
 }
 
 async function saveToSupabase(payload) {
@@ -87,42 +94,41 @@ async function saveToSupabase(payload) {
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
   if (!supabaseUrl || !serviceRoleKey) {
-    throw new Error("Faltan variables de Supabase.");
+    throw new Error("Faltan variables SUPABASE_URL o SUPABASE_SERVICE_ROLE_KEY en Vercel.");
   }
 
   const response = await fetch(`${supabaseUrl}/rest/v1/clientes_solicitudes`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "apikey": serviceRoleKey,
-      "Authorization": `Bearer ${serviceRoleKey}`,
-      "Prefer": "return=representation"
+      apikey: serviceRoleKey,
+      Authorization: `Bearer ${serviceRoleKey}`,
+      Prefer: "return=representation"
     },
     body: JSON.stringify(payload)
   });
 
-  const result = await response.json().catch(() => null);
+  const text = await response.text();
+  let result = null;
+  try { result = text ? JSON.parse(text) : null; } catch (_) {}
 
   if (!response.ok) {
-    const detail = result?.message || result?.details || "No se pudo guardar en Supabase.";
-    throw new Error(detail);
+    throw new Error(result?.message || "No se pudo guardar la solicitud en Supabase.");
   }
 
-  return result?.[0] || null;
+  return Array.isArray(result) ? result[0] : result;
 }
 
 async function sendEmail(payload, savedRecord) {
   const resendApiKey = process.env.RESEND_API_KEY;
   const to = process.env.CLIENTES_DESTINO_EMAIL;
-  const from = process.env.CLIENTES_REMITENTE_EMAIL || "onboarding@resend.dev";
+  const from = process.env.CLIENTES_REMITENTE_EMAIL;
 
-  if (!resendApiKey || !to) {
-    throw new Error("Faltan variables para envío de correo.");
+  if (!resendApiKey || !to || !from) {
+    throw new Error("El registro se guardó, pero faltan variables de correo en Vercel: RESEND_API_KEY, CLIENTES_DESTINO_EMAIL o CLIENTES_REMITENTE_EMAIL.");
   }
 
-  const createdAt = new Date().toLocaleString("es-CL", {
-    timeZone: "America/Santiago"
-  });
+  const createdAt = new Date().toLocaleString("es-CL", { timeZone: "America/Santiago" });
 
   const rows = [
     ["RUT empresa", payload.rut_empresa],
@@ -133,24 +139,24 @@ async function sendEmail(payload, savedRecord) {
     ["Comuna", payload.comuna],
     ["Mail", payload.mail],
     ["Nombre contacto", payload.nombre_contacto],
+    ["Estado", payload.estado],
+    ["Origen", payload.origen],
     ["Fecha ingreso", createdAt],
     ["ID registro", savedRecord?.id || "Sin ID"]
   ];
 
-  const tableRows = rows.map(([label, value]) => `
+  const htmlRows = rows.map(([label, value]) => `
     <tr>
-      <td style="border:1px solid #D9E2EC;padding:8px;"><strong>${escapeHtml(label)}</strong></td>
-      <td style="border:1px solid #D9E2EC;padding:8px;">${escapeHtml(value)}</td>
+      <td style="padding:10px;border:1px solid #d0d5dd;background:#f8fafc;"><strong>${escapeHtml(label)}</strong></td>
+      <td style="padding:10px;border:1px solid #d0d5dd;">${escapeHtml(value)}</td>
     </tr>
   `).join("");
 
   const html = `
-    <div style="font-family: Arial, sans-serif; color: #172033;">
-      <h2>Nueva solicitud de creación de cliente</h2>
-      <table cellpadding="0" cellspacing="0" style="border-collapse: collapse; width: 100%; max-width: 720px;">
-        ${tableRows}
-      </table>
-      <p style="margin-top: 20px;">Registro generado desde PWA QR VALEPAC.</p>
+    <div style="font-family:Arial,Helvetica,sans-serif;color:#101828;line-height:1.45;">
+      <h2 style="margin:0 0 14px;">Nueva solicitud de creación de cliente</h2>
+      <table style="border-collapse:collapse;width:100%;max-width:760px;font-size:14px;">${htmlRows}</table>
+      <p style="margin-top:16px;color:#667085;">Registro generado desde PWA QR VALEPAC.</p>
     </div>
   `;
 
@@ -158,7 +164,7 @@ async function sendEmail(payload, savedRecord) {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "Authorization": `Bearer ${resendApiKey}`
+      Authorization: `Bearer ${resendApiKey}`
     },
     body: JSON.stringify({
       from,
@@ -168,29 +174,33 @@ async function sendEmail(payload, savedRecord) {
     })
   });
 
-  const result = await response.json().catch(() => null);
+  const text = await response.text();
+  let result = null;
+  try { result = text ? JSON.parse(text) : null; } catch (_) {}
 
   if (!response.ok) {
-    const detail = result?.message || "El registro se guardó, pero no se pudo enviar el correo.";
-    throw new Error(detail);
+    throw new Error(result?.message || "El registro se guardó, pero Resend no pudo enviar el correo.");
   }
 
   return result;
 }
 
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+
+  if (req.method === "OPTIONS") return json(res, 200, { ok: true });
+
   if (req.method !== "POST") {
-    return res.status(405).json({
-      ok: false,
-      message: "Método no permitido."
-    });
+    return json(res, 405, { ok: false, message: "Método no permitido." });
   }
 
   try {
-    const data = req.body || {};
+    const data = await readBody(req);
 
     const payload = {
-      rut_empresa: cleanText(data.rut_empresa),
+      rut_empresa: formatRut(data.rut_empresa),
       razon_social: cleanText(data.razon_social),
       giro: cleanText(data.giro),
       telefono: cleanText(data.telefono),
@@ -203,27 +213,20 @@ export default async function handler(req, res) {
     };
 
     const validationError = validatePayload(payload);
-
-    if (validationError) {
-      return res.status(400).json({
-        ok: false,
-        message: validationError
-      });
-    }
+    if (validationError) return json(res, 400, { ok: false, message: validationError });
 
     const savedRecord = await saveToSupabase(payload);
-
     await sendEmail(payload, savedRecord);
 
-    return res.status(200).json({
+    return json(res, 200, {
       ok: true,
       message: "Solicitud enviada correctamente.",
       id: savedRecord?.id || null
     });
   } catch (error) {
-    return res.status(500).json({
+    return json(res, 500, {
       ok: false,
       message: error.message || "Error interno."
     });
   }
-}
+};

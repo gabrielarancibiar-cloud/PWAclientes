@@ -1,91 +1,87 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
-  <title>Creación de Cliente | VALEPAC</title>
-
-  <link rel="stylesheet" href="./styles.css" />
-  <link rel="manifest" href="./manifest.webmanifest" />
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Solicitud de Creación de Cliente | VALEPAC</title>
+  <meta name="description" content="Formulario de solicitud de creación de clientes VALEPAC" />
   <meta name="theme-color" content="#0057B8" />
 
-  <link rel="apple-touch-icon" href="./icon-192.png" />
+  <link rel="stylesheet" href="/clientes/styles.css" />
+  <link rel="manifest" href="/clientes/manifest.webmanifest" />
+  <link rel="apple-touch-icon" href="/clientes/icon-192.png" />
 </head>
-
 <body>
   <main class="page">
-    <section class="card">
-      <div class="brand">
-        <div class="brand-icon">V</div>
+    <section class="card" aria-labelledby="title">
+      <header class="header">
+        <div class="logo" aria-hidden="true">V</div>
         <div>
-          <h1>Solicitud de Creación de Cliente</h1>
-          <p>Complete los datos de su empresa para iniciar el proceso.</p>
+          <p class="eyebrow">VALEPAC</p>
+          <h1 id="title">Solicitud de Creación de Cliente</h1>
+          <p class="subtitle">Complete los datos de su empresa. Recibiremos la solicitud para revisión.</p>
         </div>
-      </div>
+      </header>
 
       <form id="clienteForm" novalidate>
-        <input type="text" name="website" class="hidden-field" autocomplete="off" tabindex="-1" />
+        <input type="text" name="empresa_web" class="honeypot" tabindex="-1" autocomplete="off" aria-hidden="true" />
 
         <div class="grid">
           <div class="field">
-            <label for="rut_empresa">RUT empresa *</label>
-            <input id="rut_empresa" name="rut_empresa" type="text" placeholder="Ej: 76.123.456-7" required />
+            <label for="rut_empresa">RUT empresa <span>*</span></label>
+            <input id="rut_empresa" name="rut_empresa" type="text" inputmode="text" autocomplete="off" placeholder="76.123.456-7" required />
             <small class="error"></small>
           </div>
 
           <div class="field">
-            <label for="razon_social">Razón social *</label>
-            <input id="razon_social" name="razon_social" type="text" placeholder="Ej: Transportes del Sur SpA" required />
-            <small class="error"></small>
-          </div>
-
-          <div class="field">
-            <label for="giro">Giro *</label>
-            <input id="giro" name="giro" type="text" placeholder="Ej: Transporte de carga" required />
-            <small class="error"></small>
-          </div>
-
-          <div class="field">
-            <label for="telefono">Teléfono *</label>
-            <input id="telefono" name="telefono" type="tel" placeholder="Ej: +56912345678" required />
+            <label for="razon_social">Razón social <span>*</span></label>
+            <input id="razon_social" name="razon_social" type="text" autocomplete="organization" placeholder="Nombre legal de la empresa" required />
             <small class="error"></small>
           </div>
 
           <div class="field full">
-            <label for="direccion">Dirección *</label>
-            <input id="direccion" name="direccion" type="text" placeholder="Calle, número, sector" required />
+            <label for="giro">Giro <span>*</span></label>
+            <input id="giro" name="giro" type="text" placeholder="Actividad comercial" required />
             <small class="error"></small>
           </div>
 
           <div class="field">
-            <label for="comuna">Comuna *</label>
-            <input id="comuna" name="comuna" type="text" placeholder="Ej: Valparaíso" required />
+            <label for="telefono">Teléfono <span>*</span></label>
+            <input id="telefono" name="telefono" type="tel" inputmode="tel" autocomplete="tel" placeholder="+56912345678" required />
             <small class="error"></small>
           </div>
 
           <div class="field">
-            <label for="mail">Mail *</label>
-            <input id="mail" name="mail" type="email" placeholder="correo@empresa.cl" required />
+            <label for="mail">Mail <span>*</span></label>
+            <input id="mail" name="mail" type="email" inputmode="email" autocomplete="email" placeholder="correo@empresa.cl" required />
             <small class="error"></small>
           </div>
 
           <div class="field full">
-            <label for="nombre_contacto">Nombre contacto *</label>
-            <input id="nombre_contacto" name="nombre_contacto" type="text" placeholder="Nombre y apellido" required />
+            <label for="direccion">Dirección <span>*</span></label>
+            <input id="direccion" name="direccion" type="text" autocomplete="street-address" placeholder="Calle, número, oficina o referencia" required />
+            <small class="error"></small>
+          </div>
+
+          <div class="field">
+            <label for="comuna">Comuna <span>*</span></label>
+            <input id="comuna" name="comuna" type="text" autocomplete="address-level2" placeholder="Comuna" required />
+            <small class="error"></small>
+          </div>
+
+          <div class="field">
+            <label for="nombre_contacto">Nombre contacto <span>*</span></label>
+            <input id="nombre_contacto" name="nombre_contacto" type="text" autocomplete="name" placeholder="Nombre y apellido" required />
             <small class="error"></small>
           </div>
         </div>
 
-        <button id="submitBtn" type="submit">
-          Enviar solicitud
-        </button>
-
-        <div id="message" class="message" aria-live="polite"></div>
+        <button id="submitBtn" type="submit">Enviar solicitud</button>
+        <div id="message" class="message" role="status" aria-live="polite"></div>
       </form>
     </section>
   </main>
 
-  <script src="./app.js"></script>
+  <script src="/clientes/app.js" defer></script>
 </body>
 </html>

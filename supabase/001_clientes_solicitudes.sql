@@ -1,9 +1,3 @@
--- =========================================================
--- VALEPAC - PWA Formulario Creación de Clientes
--- Tabla de solicitudes recibidas desde QR/PWA
--- Ejecutar en Supabase > SQL Editor
--- =========================================================
-
 create extension if not exists pgcrypto;
 
 create table if not exists public.clientes_solicitudes (
@@ -18,22 +12,15 @@ create table if not exists public.clientes_solicitudes (
   nombre_contacto text not null,
   estado text not null default 'Pendiente',
   origen text not null default 'PWA QR',
-  observaciones text,
   created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now(),
-
-  constraint clientes_solicitudes_estado_check
-  check (estado in ('Pendiente', 'En revisión', 'Aprobado', 'Rechazado', 'Observado'))
+  updated_at timestamptz not null default now()
 );
 
-create index if not exists idx_clientes_solicitudes_created_at
-on public.clientes_solicitudes (created_at desc);
+create index if not exists clientes_solicitudes_created_at_idx
+  on public.clientes_solicitudes (created_at desc);
 
-create index if not exists idx_clientes_solicitudes_estado
-on public.clientes_solicitudes (estado);
-
-create index if not exists idx_clientes_solicitudes_rut_empresa
-on public.clientes_solicitudes (rut_empresa);
+create index if not exists clientes_solicitudes_estado_idx
+  on public.clientes_solicitudes (estado);
 
 create or replace function public.set_updated_at()
 returns trigger as $$
@@ -43,19 +30,15 @@ begin
 end;
 $$ language plpgsql;
 
-drop trigger if exists trg_clientes_solicitudes_updated_at on public.clientes_solicitudes;
+drop trigger if exists set_clientes_solicitudes_updated_at on public.clientes_solicitudes;
 
-create trigger trg_clientes_solicitudes_updated_at
+create trigger set_clientes_solicitudes_updated_at
 before update on public.clientes_solicitudes
 for each row
 execute function public.set_updated_at();
 
--- Seguridad:
--- La PWA NO escribe directo con anon key.
--- Escribe mediante /api/crear-cliente usando SUPABASE_SERVICE_ROLE_KEY en Vercel.
--- Por eso dejamos RLS activo y sin políticas públicas.
-
 alter table public.clientes_solicitudes enable row level security;
 
--- No crear política pública de INSERT.
--- El service role de Supabase puede insertar igual, saltándose RLS.
+-- No se crea política pública.
+-- La PWA envía datos a /api/crear-cliente y esa API usa SUPABASE_SERVICE_ROLE_KEY.
+-- Así evitamos exposición directa de la tabla al navegador.

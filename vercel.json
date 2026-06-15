@@ -1,3 +1,15 @@
 {
-  "version": 2
+  "version": 2,
+  "cleanUrls": true,
+  "trailingSlash": true,
+  "rewrites": [
+    {
+      "source": "/",
+      "destination": "/clientes/"
+    },
+    {
+      "source": "/clientes",
+      "destination": "/clientes/"
+    }
+  ]
 }
