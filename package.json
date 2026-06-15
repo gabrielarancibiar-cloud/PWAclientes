@@ -5,14 +5,10 @@
   "type": "module",
   "description": "PWA pública para formulario QR de creación de clientes VALEPAC.",
   "scripts": {
-    "dev": "vercel dev",
-    "start": "vercel dev"
+    "build": "echo \"No build required\"",
+    "start": "node -e \"console.log('Proyecto para Vercel')\""
   },
   "engines": {
-    "node": ">=18"
-  },
-  "dependencies": {},
-  "devDependencies": {
-    "vercel": "latest"
+    "node": ">=20"
   }
 }
