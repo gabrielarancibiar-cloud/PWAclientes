@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>Creación de Cliente | VALEPAC</title>
+
+  <link rel="stylesheet" href="./styles.css" />
+  <link rel="manifest" href="./manifest.webmanifest" />
+  <meta name="theme-color" content="#0057B8" />
+
+  <link rel="apple-touch-icon" href="./icon-192.png" />
+</head>
+
+<body>
+  <main class="page">
+    <section class="card">
+      <div class="brand">
+        <div class="brand-icon">V</div>
+        <div>
+          <h1>Solicitud de Creación de Cliente</h1>
+          <p>Complete los datos de su empresa para iniciar el proceso.</p>
+        </div>
+      </div>
+
+      <form id="clienteForm" novalidate>
+        <input type="text" name="website" class="hidden-field" autocomplete="off" tabindex="-1" />
+
+        <div class="grid">
+          <div class="field">
+            <label for="rut_empresa">RUT empresa *</label>
+            <input id="rut_empresa" name="rut_empresa" type="text" placeholder="Ej: 76.123.456-7" required />
+            <small class="error"></small>
+          </div>
+
+          <div class="field">
+            <label for="razon_social">Razón social *</label>
+            <input id="razon_social" name="razon_social" type="text" placeholder="Ej: Transportes del Sur SpA" required />
+            <small class="error"></small>
+          </div>
+
+          <div class="field">
+            <label for="giro">Giro *</label>
+            <input id="giro" name="giro" type="text" placeholder="Ej: Transporte de carga" required />
+            <small class="error"></small>
+          </div>
+
+          <div class="field">
+            <label for="telefono">Teléfono *</label>
+            <input id="telefono" name="telefono" type="tel" placeholder="Ej: +56912345678" required />
+            <small class="error"></small>
+          </div>
+
+          <div class="field full">
+            <label for="direccion">Dirección *</label>
+            <input id="direccion" name="direccion" type="text" placeholder="Calle, número, sector" required />
+            <small class="error"></small>
+          </div>
+
+          <div class="field">
+            <label for="comuna">Comuna *</label>
+            <input id="comuna" name="comuna" type="text" placeholder="Ej: Valparaíso" required />
+            <small class="error"></small>
+          </div>
+
+          <div class="field">
+            <label for="mail">Mail *</label>
+            <input id="mail" name="mail" type="email" placeholder="correo@empresa.cl" required />
+            <small class="error"></small>
+          </div>
+
+          <div class="field full">
+            <label for="nombre_contacto">Nombre contacto *</label>
+            <input id="nombre_contacto" name="nombre_contacto" type="text" placeholder="Nombre y apellido" required />
+            <small class="error"></small>
+          </div>
+        </div>
+
+        <button id="submitBtn" type="submit">
+          Enviar solicitud
+        </button>
+
+        <div id="message" class="message" aria-live="polite"></div>
+      </form>
+    </section>
+  </main>
+
+  <script src="./app.js"></script>
+</body>
+</html>
