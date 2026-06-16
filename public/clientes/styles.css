@@ -223,6 +223,14 @@ button:disabled { opacity: 0.65; cursor: not-allowed; transform: none; }
   line-height: 1.35;
 }
 
+.section-head.compact p {
+  margin: 0;
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
 select,
 textarea {
   width: 100%;

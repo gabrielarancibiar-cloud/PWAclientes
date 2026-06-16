@@ -134,3 +134,8 @@ supabase/002_adjuntos_dte.sql
 
 Después de subir los cambios a GitHub, hacer redeploy en Vercel.
 No requiere nuevas variables de entorno.
+
+
+## Ajuste sección boleta/factura
+
+Se acotó la sección opcional: se elimina el selector de tipo de solicitud, se elimina el folio DTE visible y se mantiene solo el mensaje breve, observación y fotografía de respaldo.
