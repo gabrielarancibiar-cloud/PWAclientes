@@ -76,6 +76,44 @@
           </div>
         </div>
 
+        <div class="divider"></div>
+
+        <div class="section-head">
+          <h2>Respaldo / cambio de DTE</h2>
+          <p>Opcional. Use esta sección cuando el cliente necesite cambio de un DTE por otro DTE.</p>
+        </div>
+
+        <div class="grid">
+          <div class="field">
+            <label for="tipo_solicitud">Tipo de solicitud</label>
+            <select id="tipo_solicitud" name="tipo_solicitud">
+              <option value="Creación de cliente">Creación de cliente</option>
+              <option value="Cambio DTE por DTE">Cambio DTE por DTE</option>
+            </select>
+            <small class="error"></small>
+          </div>
+
+          <div class="field">
+            <label for="folio_dte">Folio DTE / referencia</label>
+            <input id="folio_dte" name="folio_dte" type="text" inputmode="numeric" placeholder="Ej: folio o documento asociado" />
+            <small class="error"></small>
+          </div>
+
+          <div class="field full">
+            <label for="observacion">Observación</label>
+            <textarea id="observacion" name="observacion" rows="3" placeholder="Detalle breve de la solicitud o cambio requerido"></textarea>
+            <small class="error"></small>
+          </div>
+
+          <div class="field full">
+            <label for="respaldo_foto">Fotografía de respaldo</label>
+            <input id="respaldo_foto" name="respaldo_foto" type="file" accept="image/*" capture="environment" />
+            <small class="hint">Adjunte foto del DTE o respaldo. Formato imagen. La PWA la comprimirá automáticamente.</small>
+            <small id="fileStatus" class="file-status"></small>
+            <small class="error"></small>
+          </div>
+        </div>
+
         <button id="submitBtn" type="submit">Enviar solicitud</button>
         <div id="message" class="message" role="status" aria-live="polite"></div>
       </form>

@@ -56,7 +56,16 @@ function escapeHtml(value) {
     .replace(/'/g, "&#039;");
 }
 
-function validatePayload(payload) {
+function sanitizeFileName(value) {
+  return String(value || "respaldo-dte.jpg")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-zA-Z0-9._-]/g, "-")
+    .replace(/-+/g, "-")
+    .slice(0, 90) || "respaldo-dte.jpg";
+}
+
+function validatePayload(payload, photo) {
   const required = [
     ["rut_empresa", "RUT empresa"],
     ["razon_social", "Razón social"],
@@ -76,6 +85,17 @@ function validatePayload(payload) {
   if (!isValidEmail(payload.mail)) return "Mail inválido.";
   if (!isValidPhone(payload.telefono)) return "Teléfono inválido.";
 
+  if (photo) {
+    const allowed = ["image/jpeg", "image/png", "image/webp"];
+    if (!allowed.includes(photo.mime_type)) return "La fotografía debe ser JPG, PNG o WEBP.";
+    if (!photo.base64) return "La fotografía no llegó correctamente.";
+
+    const size = Number(photo.size || 0);
+    if (!size || size > 3 * 1024 * 1024) {
+      return "La fotografía pesa demasiado. Máximo permitido: 3 MB comprimida.";
+    }
+  }
+
   return null;
 }
 
@@ -89,6 +109,14 @@ async function readBody(req) {
   return raw ? JSON.parse(raw) : {};
 }
 
+function supabaseHeaders(serviceRoleKey, extra = {}) {
+  return {
+    apikey: serviceRoleKey,
+    Authorization: `Bearer ${serviceRoleKey}`,
+    ...extra
+  };
+}
+
 async function saveToSupabase(payload) {
   const supabaseUrl = process.env.SUPABASE_URL;
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -99,12 +127,10 @@ async function saveToSupabase(payload) {
 
   const response = await fetch(`${supabaseUrl}/rest/v1/clientes_solicitudes`, {
     method: "POST",
-    headers: {
+    headers: supabaseHeaders(serviceRoleKey, {
       "Content-Type": "application/json",
-      apikey: serviceRoleKey,
-      Authorization: `Bearer ${serviceRoleKey}`,
       Prefer: "return=representation"
-    },
+    }),
     body: JSON.stringify(payload)
   });
 
@@ -119,7 +145,67 @@ async function saveToSupabase(payload) {
   return Array.isArray(result) ? result[0] : result;
 }
 
-async function sendEmail(payload, savedRecord) {
+async function updateSupabaseRecord(id, fields) {
+  const supabaseUrl = process.env.SUPABASE_URL;
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+  const response = await fetch(`${supabaseUrl}/rest/v1/clientes_solicitudes?id=eq.${encodeURIComponent(id)}`, {
+    method: "PATCH",
+    headers: supabaseHeaders(serviceRoleKey, {
+      "Content-Type": "application/json",
+      Prefer: "return=representation"
+    }),
+    body: JSON.stringify(fields)
+  });
+
+  const text = await response.text();
+  let result = null;
+  try { result = text ? JSON.parse(text) : null; } catch (_) {}
+
+  if (!response.ok) {
+    throw new Error(result?.message || "No se pudo actualizar el respaldo en Supabase.");
+  }
+
+  return Array.isArray(result) ? result[0] : result;
+}
+
+async function uploadPhotoToSupabase(photo, recordId) {
+  if (!photo) return null;
+
+  const supabaseUrl = process.env.SUPABASE_URL;
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const bucket = "clientes-respaldos";
+  const fileName = sanitizeFileName(photo.file_name || "respaldo-dte.jpg");
+  const path = `${recordId}/${Date.now()}-${fileName}`;
+  const buffer = Buffer.from(photo.base64, "base64");
+
+  const response = await fetch(`${supabaseUrl}/storage/v1/object/${bucket}/${path}`, {
+    method: "POST",
+    headers: supabaseHeaders(serviceRoleKey, {
+      "Content-Type": photo.mime_type || "image/jpeg",
+      "x-upsert": "true"
+    }),
+    body: buffer
+  });
+
+  const text = await response.text();
+  let result = null;
+  try { result = text ? JSON.parse(text) : null; } catch (_) {}
+
+  if (!response.ok) {
+    throw new Error(result?.message || "La solicitud se guardó, pero no se pudo guardar la fotografía.");
+  }
+
+  return {
+    bucket,
+    path,
+    file_name: fileName,
+    mime_type: photo.mime_type || "image/jpeg",
+    size: buffer.length
+  };
+}
+
+async function sendEmail(payload, savedRecord, uploadedPhoto, photo) {
   const resendApiKey = process.env.RESEND_API_KEY;
   const to = process.env.CLIENTES_DESTINO_EMAIL;
   const from = process.env.CLIENTES_REMITENTE_EMAIL;
@@ -131,6 +217,7 @@ async function sendEmail(payload, savedRecord) {
   const createdAt = new Date().toLocaleString("es-CL", { timeZone: "America/Santiago" });
 
   const rows = [
+    ["Tipo de solicitud", payload.tipo_solicitud],
     ["RUT empresa", payload.rut_empresa],
     ["Razón social", payload.razon_social],
     ["Giro", payload.giro],
@@ -139,6 +226,9 @@ async function sendEmail(payload, savedRecord) {
     ["Comuna", payload.comuna],
     ["Mail", payload.mail],
     ["Nombre contacto", payload.nombre_contacto],
+    ["Folio DTE / referencia", payload.folio_dte || "Sin información"],
+    ["Observación", payload.observacion || "Sin observación"],
+    ["Fotografía respaldo", uploadedPhoto ? `Adjunta (${uploadedPhoto.file_name})` : "Sin fotografía"],
     ["Estado", payload.estado],
     ["Origen", payload.origen],
     ["Fecha ingreso", createdAt],
@@ -160,18 +250,29 @@ async function sendEmail(payload, savedRecord) {
     </div>
   `;
 
+  const body = {
+    from,
+    to,
+    subject: `${payload.tipo_solicitud || "Nueva solicitud cliente"} - ${payload.razon_social}`,
+    html
+  };
+
+  if (photo && uploadedPhoto) {
+    body.attachments = [
+      {
+        filename: uploadedPhoto.file_name,
+        content: photo.base64
+      }
+    ];
+  }
+
   const response = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${resendApiKey}`
     },
-    body: JSON.stringify({
-      from,
-      to,
-      subject: `Nueva solicitud cliente - ${payload.razon_social}`,
-      html
-    })
+    body: JSON.stringify(body)
   });
 
   const text = await response.text();
@@ -198,6 +299,7 @@ module.exports = async function handler(req, res) {
 
   try {
     const data = await readBody(req);
+    const photo = data.respaldo_foto || null;
 
     const payload = {
       rut_empresa: formatRut(data.rut_empresa),
@@ -208,15 +310,30 @@ module.exports = async function handler(req, res) {
       comuna: cleanText(data.comuna),
       mail: cleanText(data.mail).toLowerCase(),
       nombre_contacto: cleanText(data.nombre_contacto),
+      tipo_solicitud: cleanText(data.tipo_solicitud) || "Creación de cliente",
+      folio_dte: cleanText(data.folio_dte),
+      observacion: cleanText(data.observacion),
       estado: "Pendiente",
       origen: "PWA QR"
     };
 
-    const validationError = validatePayload(payload);
+    const validationError = validatePayload(payload, photo);
     if (validationError) return json(res, 400, { ok: false, message: validationError });
 
-    const savedRecord = await saveToSupabase(payload);
-    await sendEmail(payload, savedRecord);
+    let savedRecord = await saveToSupabase(payload);
+    const uploadedPhoto = await uploadPhotoToSupabase(photo, savedRecord?.id || "sin-id");
+
+    if (uploadedPhoto && savedRecord?.id) {
+      savedRecord = await updateSupabaseRecord(savedRecord.id, {
+        adjunto_foto_bucket: uploadedPhoto.bucket,
+        adjunto_foto_path: uploadedPhoto.path,
+        adjunto_foto_nombre: uploadedPhoto.file_name,
+        adjunto_foto_tipo: uploadedPhoto.mime_type,
+        adjunto_foto_size: uploadedPhoto.size
+      });
+    }
+
+    await sendEmail(payload, savedRecord, uploadedPhoto, photo);
 
     return json(res, 200, {
       ok: true,

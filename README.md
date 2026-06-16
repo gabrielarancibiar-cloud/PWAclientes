@@ -109,3 +109,28 @@ https://tu-proyecto.vercel.app/clientes/
 5. Revisar correo destino.
 
 Si el formulario abre pero no envía, el problema casi seguro son variables de entorno o dominio no verificado en Resend.
+
+## Actualización: fotografía de respaldo / cambio DTE
+
+Esta versión agrega:
+
+- Tipo de solicitud: Creación de cliente o Cambio DTE por DTE.
+- Folio DTE / referencia.
+- Observación.
+- Fotografía de respaldo opcional.
+- Compresión automática de imagen en la PWA.
+- Guardado de fotografía en Supabase Storage, bucket privado `clientes-respaldos`.
+- Envío de fotografía como adjunto en el correo por Resend.
+
+### SQL adicional obligatorio
+
+Ejecutar en Supabase SQL Editor:
+
+```sql
+supabase/002_adjuntos_dte.sql
+```
+
+### Deploy
+
+Después de subir los cambios a GitHub, hacer redeploy en Vercel.
+No requiere nuevas variables de entorno.
