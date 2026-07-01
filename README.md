@@ -139,3 +139,19 @@ No requiere nuevas variables de entorno.
 ## Ajuste sección boleta/factura
 
 Se acotó la sección opcional: se elimina el selector de tipo de solicitud, se elimina el folio DTE visible y se mantiene solo el mensaje breve, observación y fotografía de respaldo.
+
+
+## Actualización: tipo de vehículo y patente
+
+Se agregaron los campos:
+
+- Tipo de vehículo, con ejemplo: `Ej: Camión`
+- Patente, con ejemplo: `Ej: ABCD12`
+
+Para bases ya creadas, ejecutar en Supabase:
+
+```text
+supabase/003_tipo_vehiculo_patente.sql
+```
+
+Luego subir cambios a GitHub y hacer redeploy en Vercel.

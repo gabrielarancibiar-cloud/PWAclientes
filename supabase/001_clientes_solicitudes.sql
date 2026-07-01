@@ -10,6 +10,8 @@ create table if not exists public.clientes_solicitudes (
   comuna text not null,
   mail text not null,
   nombre_contacto text not null,
+  tipo_vehiculo text,
+  patente text,
   estado text not null default 'Pendiente',
   origen text not null default 'PWA QR',
   created_at timestamptz not null default now(),

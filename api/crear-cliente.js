@@ -74,7 +74,9 @@ function validatePayload(payload, photo) {
     ["direccion", "Dirección"],
     ["comuna", "Comuna"],
     ["mail", "Mail"],
-    ["nombre_contacto", "Nombre contacto"]
+    ["nombre_contacto", "Nombre contacto"],
+    ["tipo_vehiculo", "Tipo de vehículo"],
+    ["patente", "Patente"]
   ];
 
   for (const [key, label] of required) {
@@ -226,6 +228,8 @@ async function sendEmail(payload, savedRecord, uploadedPhoto, photo) {
     ["Comuna", payload.comuna],
     ["Mail", payload.mail],
     ["Nombre contacto", payload.nombre_contacto],
+    ["Tipo de vehículo", payload.tipo_vehiculo],
+    ["Patente", payload.patente],
     ["Folio DTE / referencia", payload.folio_dte || "Sin información"],
     ["Observación", payload.observacion || "Sin observación"],
     ["Fotografía respaldo", uploadedPhoto ? `Adjunta (${uploadedPhoto.file_name})` : "Sin fotografía"],
@@ -310,6 +314,8 @@ module.exports = async function handler(req, res) {
       comuna: cleanText(data.comuna),
       mail: cleanText(data.mail).toLowerCase(),
       nombre_contacto: cleanText(data.nombre_contacto),
+      tipo_vehiculo: cleanText(data.tipo_vehiculo),
+      patente: cleanText(data.patente).toUpperCase().replace(/\s+/g, ""),
       tipo_solicitud: cleanText(data.tipo_solicitud) || "Creación de cliente",
       folio_dte: cleanText(data.folio_dte),
       observacion: cleanText(data.observacion),

@@ -1,4 +1,4 @@
-const CACHE_NAME = "valepac-clientes-v3";
+const CACHE_NAME = "valepac-clientes-v4";
 const ASSETS = [
   "/clientes/",
   "/clientes/index.html",

@@ -165,6 +165,8 @@ async function payloadFromForm() {
     comuna: String(data.comuna || "").trim(),
     mail: String(data.mail || "").trim().toLowerCase(),
     nombre_contacto: String(data.nombre_contacto || "").trim(),
+    tipo_vehiculo: String(data.tipo_vehiculo || "").trim(),
+    patente: String(data.patente || "").trim().toUpperCase().replace(/\s+/g, ""),
     tipo_solicitud: String(data.tipo_solicitud || "Creación de cliente").trim(),
     folio_dte: String(data.folio_dte || "").trim(),
     observacion: String(data.observacion || "").trim()
@@ -189,7 +191,9 @@ function validate(payload) {
     "direccion",
     "comuna",
     "mail",
-    "nombre_contacto"
+    "nombre_contacto",
+    "tipo_vehiculo",
+    "patente"
   ];
 
   for (const input of form.querySelectorAll("input[required]")) clearError(input);
@@ -223,6 +227,10 @@ function validate(payload) {
 
 form.elements.rut_empresa.addEventListener("blur", () => {
   form.elements.rut_empresa.value = formatRut(form.elements.rut_empresa.value);
+});
+
+form.elements.patente.addEventListener("blur", () => {
+  form.elements.patente.value = String(form.elements.patente.value || "").trim().toUpperCase().replace(/\s+/g, "");
 });
 
 fileInput.addEventListener("change", () => {
